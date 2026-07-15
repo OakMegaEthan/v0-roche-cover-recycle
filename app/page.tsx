@@ -11,11 +11,13 @@ const mockups = [
     href: "/sales",
     name: "業務盒蓋回收",
     description: "業務端回收登錄與電子簽名",
+    note: "需 OTP 登入",
   },
   {
     href: "/staff",
     name: "工作人員會員優惠券查詢與發放",
-    description: "會員查詢、單筆與批次發券",
+    description: "會員查詢、單筆與批次發券、權限管理",
+    note: "需 OTP 登入；加上 ?role=user 可切換為一般使用者（客服）視角",
   },
   {
     href: "/store/recycling-batches",
@@ -47,6 +49,7 @@ export default function Home() {
             >
               <div className="font-semibold text-card-foreground mb-1">{mockup.name}</div>
               <div className="text-sm text-muted-foreground">{mockup.description}</div>
+              {mockup.note && <div className="mt-2 text-xs text-muted-foreground/80">{mockup.note}</div>}
             </Link>
           ))}
         </div>
