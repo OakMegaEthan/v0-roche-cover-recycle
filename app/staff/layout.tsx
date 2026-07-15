@@ -1,7 +1,6 @@
 import type React from "react"
 import { Suspense } from "react"
 import { StaffNav } from "@/components/staff/staff-nav"
-import "./theme.css"
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
   return (
