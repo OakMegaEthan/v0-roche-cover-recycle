@@ -1,12 +1,28 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Plus, Search, ShieldAlert, UserX } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, MoreHorizontal, Plus, Search, Trash2, UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Dialog,
   DialogContent,
@@ -24,14 +40,37 @@ type BackendUser = {
   name: string
   email: string
   role: StaffRole
+  /** 加入時間，決定列表的預設排序（最新在最上）。 */
+  createdAt: string
+}
+
+/** 權限分級的三段式排序：預設（加入時間）→ 管理者優先 → 一般使用者優先。 */
+type SortMode = "default" | "admin-first" | "user-first"
+
+const SORT_CYCLE: Record<SortMode, SortMode> = {
+  default: "admin-first",
+  "admin-first": "user-first",
+  "user-first": "default",
+}
+
+const SORT_LABEL: Record<SortMode, string> = {
+  default: "預設（依加入時間）",
+  "admin-first": "管理者優先",
+  "user-first": "一般使用者優先",
+}
+
+const SORT_ICON = {
+  default: ArrowUpDown,
+  "admin-first": ArrowUp,
+  "user-first": ArrowDown,
 }
 
 const INITIAL_USERS: BackendUser[] = [
-  { id: "B-001", name: "吳孟儒", email: "mengju.wu@example.com", role: "admin" },
-  { id: "B-002", name: "蔡佩珊", email: "peishan.tsai@example.com", role: "admin" },
-  { id: "B-003", name: "黃思婷", email: "szuting.huang@example.com", role: "user" },
-  { id: "B-004", name: "劉冠宇", email: "kuanyu.liu@example.com", role: "user" },
-  { id: "B-005", name: "鄭雅文", email: "yawen.cheng@example.com", role: "user" },
+  { id: "B-001", name: "吳孟儒", email: "mengju.wu@example.com", role: "admin", createdAt: "2025-01-15T09:00:00Z" },
+  { id: "B-002", name: "蔡佩珊", email: "peishan.tsai@example.com", role: "admin", createdAt: "2025-04-28T13:20:00Z" },
+  { id: "B-003", name: "黃思婷", email: "szuting.huang@example.com", role: "user", createdAt: "2025-06-10T10:15:00Z" },
+  { id: "B-004", name: "劉冠宇", email: "kuanyu.liu@example.com", role: "user", createdAt: "2025-02-03T15:40:00Z" },
+  { id: "B-005", name: "鄭雅文", email: "yawen.cheng@example.com", role: "user", createdAt: "2025-05-19T11:05:00Z" },
 ]
 
 const ROLE_DESCRIPTION: Record<StaffRole, string> = {
@@ -39,10 +78,16 @@ const ROLE_DESCRIPTION: Record<StaffRole, string> = {
   user: "僅可使用會員查詢／優惠券發放與批次發放。",
 }
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("zh-TW", { year: "numeric", month: "2-digit", day: "2-digit" })
+}
+
 export function BackendPermissionTable() {
   const [users, setUsers] = useState<BackendUser[]>(INITIAL_USERS)
   const [keyword, setKeyword] = useState("")
+  const [sortMode, setSortMode] = useState<SortMode>("default")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<BackendUser | null>(null)
   const [form, setForm] = useState<{ name: string; email: string; role: StaffRole }>({
     name: "",
     email: "",
@@ -52,18 +97,35 @@ export function BackendPermissionTable() {
 
   const adminCount = users.filter((u) => u.role === "admin").length
 
-  const filtered = useMemo(() => {
+  const visible = useMemo(() => {
     const kw = keyword.trim().toLowerCase()
-    if (!kw) return users
-    return users.filter((u) => u.name.toLowerCase().includes(kw) || u.email.toLowerCase().includes(kw))
-  }, [users, keyword])
+    const filtered = users.filter(
+      (u) => !kw || u.name.toLowerCase().includes(kw) || u.email.toLowerCase().includes(kw),
+    )
+    // 同分級內一律以加入時間排序，最新在最上。
+    const byNewest = (a: BackendUser, b: BackendUser) => b.createdAt.localeCompare(a.createdAt)
+
+    if (sortMode === "default") return [...filtered].sort(byNewest)
+
+    const first: StaffRole = sortMode === "admin-first" ? "admin" : "user"
+    return [...filtered].sort((a, b) => {
+      if (a.role !== b.role) return a.role === first ? -1 : 1
+      return byNewest(a, b)
+    })
+  }, [users, keyword, sortMode])
 
   function changeRole(id: string, role: StaffRole) {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)))
   }
 
+  function confirmDelete() {
+    if (!deleteTarget) return
+    setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id))
+    setDeleteTarget(null)
+  }
+
   function submit() {
-    const nextErrors: { name?: string; email?: string } = {}
+    const nextErrors: typeof errors = {}
     if (!form.name.trim()) nextErrors.name = "請輸入姓名"
     if (!form.email.trim()) nextErrors.email = "請輸入 email"
     else if (!isValidEmail(form.email)) nextErrors.email = "email 格式不正確"
@@ -81,11 +143,14 @@ export function BackendPermissionTable() {
         name: form.name.trim(),
         email: form.email.trim(),
         role: form.role,
+        createdAt: new Date().toISOString(),
       },
     ])
     setForm({ name: "", email: "", role: "user" })
     setDialogOpen(false)
   }
+
+  const SortIcon = SORT_ICON[sortMode]
 
   return (
     <div className="space-y-6">
@@ -109,15 +174,26 @@ export function BackendPermissionTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>編號</TableHead>
               <TableHead>姓名</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>權限分級</TableHead>
-              <TableHead>可使用範圍</TableHead>
+              <TableHead>
+                <button
+                  className="flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 font-medium transition-colors hover:bg-muted"
+                  onClick={() => setSortMode(SORT_CYCLE[sortMode])}
+                  title={`目前排序：${SORT_LABEL[sortMode]}（點擊切換）`}
+                >
+                  權限分級
+                  <SortIcon
+                    className={sortMode === "default" ? "h-3.5 w-3.5 text-muted-foreground" : "h-3.5 w-3.5"}
+                  />
+                </button>
+              </TableHead>
+              <TableHead>加入時間</TableHead>
+              <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {visible.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-40">
                   {/* 查無資料空狀態，文案待客戶確認。 */}
@@ -129,12 +205,11 @@ export function BackendPermissionTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((user) => {
+              visible.map((user) => {
                 // 至少保留一名管理者，避免後台失去可管理權限的人。
                 const isLastAdmin = user.role === "admin" && adminCount === 1
                 return (
                   <TableRow key={user.id}>
-                    <TableCell className="font-mono text-sm text-muted-foreground">{user.id}</TableCell>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell>
@@ -148,15 +223,29 @@ export function BackendPermissionTable() {
                         <option value="user">{ROLE_LABEL.user}</option>
                         <option value="admin">{ROLE_LABEL.admin}</option>
                       </select>
-                      {isLastAdmin && (
-                        <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                          <ShieldAlert className="h-3 w-3" />
-                          需至少保留一位管理者
-                        </p>
-                      )}
+                      {isLastAdmin && <p className="mt-1 text-xs text-muted-foreground">需至少保留一位管理者</p>}
                     </TableCell>
-                    <TableCell className="max-w-xs text-sm text-muted-foreground">
-                      {ROLE_DESCRIPTION[user.role]}
+                    <TableCell className="text-sm text-muted-foreground">{formatDate(user.createdAt)}</TableCell>
+                    <TableCell>
+                      {/* modal={false}：預設的 modal 選單會在 body 設下 pointer-events:none，
+                          自選單開啟確認框時該樣式不會被清掉，導致整頁失去互動。 */}
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label={`${user.name} 的更多操作`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            disabled={isLastAdmin}
+                            onSelect={() => setDeleteTarget(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            移除使用者
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 )
@@ -174,6 +263,26 @@ export function BackendPermissionTable() {
           其中管理者 <Badge variant="secondary">{adminCount}</Badge> 位
         </span>
       </div>
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>確定要移除「{deleteTarget?.name}」嗎？</AlertDialogTitle>
+            <AlertDialogDescription>
+              移除後，{deleteTarget?.name} 將無法再登入優惠券後台。此操作無法復原。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              確認移除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
