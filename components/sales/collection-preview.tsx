@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import type { CollectionData } from "@/app/page"
+import type { CollectionData } from "@/app/sales/page"
 import { Building2, MapPin, Receipt, User, MessageSquare, Calendar } from "lucide-react"
 
 interface CollectionPreviewProps {

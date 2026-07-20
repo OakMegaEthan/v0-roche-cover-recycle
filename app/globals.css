@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* 專案不做深色模式。此行將 dark 變體由「跟隨系統」改為「需 .dark class」，
+   而全站不會加上 .dark，元件殘留的 dark:* 工具類別因此一律不生效。
+   刪掉此行會讓那些 dark:* 隨系統深色模式跑出來，但已無對應的變數可用。 */
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -39,40 +42,6 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-.dark {
-  --background: oklch(0.08 0.01 260);
-  --foreground: oklch(0.95 0.005 85);
-  --card: oklch(0.12 0.01 260);
-  --card-foreground: oklch(0.95 0.005 85);
-  --popover: oklch(0.12 0.01 260);
-  --popover-foreground: oklch(0.95 0.005 85);
-  --primary: oklch(0.65 0.18 260);
-  --primary-foreground: oklch(0.08 0.01 260);
-  --secondary: oklch(0.18 0.01 260);
-  --secondary-foreground: oklch(0.95 0.005 85);
-  --muted: oklch(0.15 0.01 260);
-  --muted-foreground: oklch(0.65 0.02 85);
-  --accent: oklch(0.75 0.18 45);
-  --accent-foreground: oklch(0.08 0.01 260);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.95 0.005 85);
-  --border: oklch(0.18 0.01 260);
-  --input: oklch(0.15 0.01 260);
-  --ring: oklch(0.65 0.18 260);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
-}
 
 @theme inline {
   --font-sans: var(--font-geist-sans);

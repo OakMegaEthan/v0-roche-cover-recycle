@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import type { CollectionData, SignatureData } from "@/app/page"
+import type { CollectionData, SignatureData } from "@/app/sales/page"
 import { PenTool, RotateCcw, Check, Maximize2 } from "lucide-react"
 
 interface SignatureCaptureProps {
