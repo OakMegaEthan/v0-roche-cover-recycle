@@ -3,7 +3,7 @@ import Link from "next/link"
 
 export const metadata: Metadata = {
   title: "羅氏盒蓋回收 — Mockup 導覽",
-  description: "四個介面 mockup 的入口",
+  description: "五個介面 mockup 的入口",
 }
 
 const mockups = [
@@ -29,6 +29,11 @@ const mockups = [
     name: "消費者優惠券使用流程",
     description: "持券、掃碼、核銷",
   },
+  {
+    href: "/store-verification",
+    name: "店家驗證密碼查詢",
+    description: "選擇店家對象，取得官方帳號邀請入口與驗證密碼",
+  },
 ]
 
 export default function Home() {
@@ -37,7 +42,7 @@ export default function Home() {
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">羅氏盒蓋回收</h1>
-          <p className="text-sm md:text-base text-muted-foreground">四個介面 mockup，點擊進入各自的流程</p>
+          <p className="text-sm md:text-base text-muted-foreground">五個介面 mockup，點擊進入各自的流程</p>
         </div>
 
         <div className="grid gap-4">
